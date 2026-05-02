@@ -1,0 +1,26 @@
+# Compiled binaries and executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries (built with `go test -c`)
+*.test
+
+# Output of 'go build' if not specified
+# Most developers use a specific folder like /bin/ or /out/
+bin/
+out/
+
+# Output of 'go test -coverprofile'
+*.out
+
+# Dependency directory
+# Only ignore if you are NOT using Go Modules (vendoring)
+# vendor/
+
+# IDE/Tooling specific (Optional but recommended)
+.idea/
+.vscode/
+*.swp
