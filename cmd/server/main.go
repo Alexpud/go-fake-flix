@@ -1,17 +1,24 @@
 package main
 
 import (
-	"go-fake-flix/internal/apierrors"
 	"go-fake-flix/internal/modules/video"
+	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-func main() {
-	server := gin.Default()
-	server.Use(apierrors.ErrorHandler())
-	public := server.Group("/api/v1")
-	video.RegisterVideoRoutes(public)
+var router = chi.NewRouter()
 
-	server.Run(":8080")
+func main() {
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+
+	// server := gin.Default()
+	// server.Use(apierrors.ErrorHandler())
+	// public := server.Group("/api/v1")
+	video.RegisterVideoRoutes(r)
+
+	http.ListenAndServe(":8080", r)
 }
