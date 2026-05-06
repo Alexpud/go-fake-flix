@@ -11,6 +11,10 @@ import (
 	"github.com/go-chi/render"
 )
 
+type ResponseSuccess struct {
+	Message string `json:"message,omitempty"`
+}
+
 var db = map[string]string{
 	"hello": "Hello, World!",
 }
@@ -44,6 +48,13 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, &apierrors.AppError{Code: "VIDEO_UPLOADED", Message: "Video uploaded"})
 }
 
+// Exemple Doc
+// @Summary      Get stream content
+// @Description  Get stream content
+// @Tags         Video
+// @Produce      json
+// @Success      200				 {object}  ResponseSuccess
+// @Router       /api/v1/content/stream/{id} [get]
 func getVideo(w http.ResponseWriter, r *http.Request) {
 	// There should be logic to handle different ranges in the video: getting the video from a starting point and stuff
 	video, ok := db[r.URL.Query().Get("id")]

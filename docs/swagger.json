@@ -1,0 +1,46 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Exemple use of scalar beautfull api",
+        "title": "Simple API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Marcelo Petrucio",
+            "email": "marcelo.petrucio43@gmail.com"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/api/v1/content/stream/{id}": {
+            "get": {
+                "description": "Get stream content",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Video"
+                ],
+                "summary": "Get stream content",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/video.ResponseSuccess"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "video.ResponseSuccess": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

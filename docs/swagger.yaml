@@ -1,0 +1,30 @@
+basePath: /
+definitions:
+  video.ResponseSuccess:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact:
+    email: marcelo.petrucio43@gmail.com
+    name: Marcelo Petrucio
+  description: Exemple use of scalar beautfull api
+  termsOfService: http://swagger.io/terms/
+  title: Simple API
+  version: "1.0"
+paths:
+  /api/v1/content/stream/{id}:
+    get:
+      description: Get stream content
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/video.ResponseSuccess'
+      summary: Get stream content
+      tags:
+      - Video
+swagger: "2.0"
