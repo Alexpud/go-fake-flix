@@ -54,7 +54,8 @@ go run ./cmd/server/main.go
 Then open:
 
 - Scalar UI: `http://localhost:8080/reference`
-- Raw spec: `http://localhost:8080/docs/swagger.json`
+- OpenAPI 3 (converted): `http://localhost:8080/openapi.json`
+- Raw Swagger 2.0: `http://localhost:8080/docs/swagger.json`
 
 ### Common issues
 

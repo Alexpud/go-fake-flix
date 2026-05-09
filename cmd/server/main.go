@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-fake-flix/internal/modules/video"
+	"go-fake-flix/internal/openapi"
 	"net/http"
 
 	"github.com/MarceloPetrucio/go-scalar-api-reference"
@@ -26,10 +27,21 @@ func main() {
 	video.RegisterVideoRoutes(r)
 
 	r.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))))
+	r.Get("/openapi.json", openapi.Handler("docs/swagger.json"))
 
 	r.Get("/reference", func(w http.ResponseWriter, r *http.Request) {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		} else if xfProto := r.Header.Get("X-Forwarded-Proto"); xfProto != "" {
+			scheme = xfProto
+		}
+
+		// Use an absolute URL so Scalar doesn't try to treat "/openapi.json" as a Windows file path.
+		specURL := fmt.Sprintf("%s://%s/openapi.json", scheme, r.Host)
+
 		htmlContent, err := scalar.ApiReferenceHTML(&scalar.Options{
-			SpecURL: "http://localhost:8080/docs/swagger.json",
+			SpecURL: specURL,
 			CustomOptions: scalar.CustomOptions{
 				PageTitle: "Simple API",
 			},
