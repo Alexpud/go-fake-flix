@@ -2,13 +2,16 @@ package video
 
 import (
 	"go-fake-flix/internal/apierrors"
-	"io"
+	"go-fake-flix/internal/modules/video/usecases"
+	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+)
+
+const (
+	MaxFileSize = 5 * 1024 * 1024 // 5MB
 )
 
 type ResponseSuccess struct {
@@ -26,26 +29,47 @@ func RegisterVideoRoutes(r *chi.Mux) {
 	})
 }
 
+// @
+// @Summary      Upload a video file
+// @Description  Upload a video file
+// @Tags         Video
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file    formData file    true  "Video file"
+// @Param        filename formData string true  "File name"
+// @Success      200
+// @Router       /api/v1/content/upload [post]
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile("file")
+	file, fileName, err := parseMultipartUpload(r)
 	if err != nil {
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, &apierrors.AppError{Code: "FILE_NOT_FOUND", Message: "File not found"})
+		render.JSON(w, r, err)
+		return
+	}
+	defer file.Close()
+
+	filePath, errUsecase := usecases.UploadVideo(file, fileName)
+	if errUsecase != nil {
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, errUsecase)
 		return
 	}
 
-	dst := filepath.Join("./files/", filepath.Base(r.FormValue("filename")))
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		render.Status(r, http.StatusInternalServerError)
-		render.JSON(w, r, &apierrors.AppError{Code: "FILE_NOT_CREATED", Message: "File not created"})
-		return
-	}
-	defer dstFile.Close()
-	io.Copy(dstFile, file)
-	db[r.FormValue("filename")] = dst
+	db[fileName] = filePath
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, &apierrors.AppError{Code: "VIDEO_UPLOADED", Message: "Video uploaded"})
+}
+
+func parseMultipartUpload(r *http.Request) (multipart.File, string, error) {
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		return nil, "", &apierrors.AppError{Code: "FILE_NOT_FOUND", Message: "File not found"}
+	}
+
+	if fileHeader.Size > MaxFileSize {
+		return nil, "", &apierrors.AppError{Code: "FILE_TOO_LARGE", Message: "Max file size is 5MB"}
+	}
+
+	return file, fileHeader.Filename, nil
 }
 
 // Exemple Doc

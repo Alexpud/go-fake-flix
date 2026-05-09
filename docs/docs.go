@@ -10,10 +10,7 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "Marcelo Petrucio",
-            "email": "marcelo.petrucio43@gmail.com"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -38,6 +35,42 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/content/upload": {
+            "post": {
+                "description": "Upload a video file",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Video"
+                ],
+                "summary": "Upload a video file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Video file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File name",
+                        "name": "filename",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -58,8 +91,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Simple API",
-	Description:      "Exemple use of scalar beautfull api",
+	Title:            "Fake flix API",
+	Description:      "Fake flix API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

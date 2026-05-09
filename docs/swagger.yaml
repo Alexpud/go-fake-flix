@@ -6,12 +6,10 @@ definitions:
         type: string
     type: object
 info:
-  contact:
-    email: marcelo.petrucio43@gmail.com
-    name: Marcelo Petrucio
-  description: Exemple use of scalar beautfull api
+  contact: {}
+  description: Fake flix API
   termsOfService: http://swagger.io/terms/
-  title: Simple API
+  title: Fake flix API
   version: "1.0"
 paths:
   /api/v1/content/stream/{id}:
@@ -25,6 +23,30 @@ paths:
           schema:
             $ref: '#/definitions/video.ResponseSuccess'
       summary: Get stream content
+      tags:
+      - Video
+  /api/v1/content/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a video file
+      parameters:
+      - description: Video file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: File name
+        in: formData
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Upload a video file
       tags:
       - Video
 swagger: "2.0"

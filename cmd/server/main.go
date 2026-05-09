@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-fake-flix/internal/modules/video"
 	"go-fake-flix/internal/openapi"
+	"log"
 	"net/http"
 
 	"github.com/MarceloPetrucio/go-scalar-api-reference"
@@ -57,5 +58,7 @@ func main() {
 		fmt.Fprintln(w, htmlContent)
 	})
 
-	_ = http.ListenAndServe(":8080", r)
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(err)
+	}
 }
