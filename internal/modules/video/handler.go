@@ -5,6 +5,9 @@ import (
 	"go-fake-flix/internal/modules/video/usecases"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -13,6 +16,9 @@ import (
 const (
 	MaxFileSize = 5 * 1024 * 1024 // 5MB
 )
+
+// allowedUploadExtensions are suffixes including the dot, lowercased (see parseMultipartUpload).
+var allowedUploadExtensions = []string{".mp4", ".webm", ".mkv"}
 
 type ResponseSuccess struct {
 	Message string `json:"message,omitempty"`
@@ -26,7 +32,27 @@ func RegisterVideoRoutes(r *chi.Mux) {
 	r.Route("/api/v1/content", func(r chi.Router) {
 		r.Post("/upload", uploadVideo)
 		r.Get("/stream/{id}", getVideo)
+		r.Get("/doc", getDoc)
 	})
+}
+
+type RouteInfo struct {
+	Method      string `json:"method"`
+	Path        string `json:"path"`
+	Description string `json:"description"`
+}
+
+type ResponseDoc struct {
+	Routes []RouteInfo `json:"routes"`
+}
+
+func getDoc(w http.ResponseWriter, r *http.Request) {
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, ResponseDoc{Routes: []RouteInfo{
+		{Method: "POST", Path: "/api/v1/content/upload", Description: "Upload a video file."},
+		{Method: "GET", Path: "/api/v1/content/stream/{id}", Description: "Stream a video by id."},
+		{Method: "GET", Path: "/api/v1/content/doc", Description: "Get API documentation for video routes."},
+	}})
 }
 
 // @
@@ -67,6 +93,14 @@ func parseMultipartUpload(r *http.Request) (multipart.File, string, error) {
 
 	if fileHeader.Size > MaxFileSize {
 		return nil, "", &apierrors.AppError{Code: "FILE_TOO_LARGE", Message: "Max file size is 5MB"}
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+	if ext == "" || !slices.Contains(allowedUploadExtensions, ext) {
+		return nil, "", &apierrors.AppError{
+			Code:    "FILE_EXTENSION_INVALID",
+			Message: "Invalid file extension. Allowed: " + strings.Join(allowedUploadExtensions, ", "),
+		}
 	}
 
 	return file, fileHeader.Filename, nil
