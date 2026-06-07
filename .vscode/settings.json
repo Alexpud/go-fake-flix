@@ -1,0 +1,13 @@
+{
+  "go.lintOnSave": "package",
+  "go.lintTool": "golangci-lint-v2",
+  "go.lintFlags": [],
+  "go.formatTool": "custom",
+  "go.alternateTools": {
+    "customFormatter": "golangci-lint"
+  },
+  "go.formatFlags": [
+    "fmt",
+    "--stdin"
+  ]
+}

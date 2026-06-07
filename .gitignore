@@ -22,5 +22,4 @@ out/
 
 # IDE/Tooling specific (Optional but recommended)
 .idea/
-.vscode/
 *.swp

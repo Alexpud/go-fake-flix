@@ -18,7 +18,7 @@ func GetVideo(ctx context.Context, repo repository.VideoRepository, id string) (
 	v, err := repo.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, common.NewBusinessError("VIDEO_NOT_FOUND", "Video not found")
+			return nil, common.NewBusinessError("VIDEO_NOT_FOUND", "Video not found  ")
 		}
 		return nil, common.NewBusinessError("VIDEO_FETCH_FAILED", "Could not fetch video")
 	}
