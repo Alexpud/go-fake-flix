@@ -10,12 +10,12 @@ type ProblemDetails struct {
 	Extras   map[string]any `json:"extras,omitempty"`
 }
 
-// AppError is an application error attached with c.Error for the global handler.
-type AppError struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
+// // AppError is an application error attached with c.Error for the global handler.
+// type AppError struct {
+// 	Code    string `json:"code"`
+// 	Message string `json:"message"`
+// }
 
-func (e *AppError) Error() string {
-	return e.Message
-}
+// func (e *AppError) Error() string {
+// 	return e.Message
+// }

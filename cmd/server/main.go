@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-fake-flix/internal/modules/video"
+	videoRepository "go-fake-flix/internal/modules/video/repository"
 	"go-fake-flix/internal/openapi"
 	"log"
 	"net/http"
@@ -25,7 +26,8 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 
-	video.RegisterVideoRoutes(r)
+	videoRepo := videoRepository.New()
+	video.RegisterVideoRoutes(r, videoRepo)
 
 	r.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))))
 	r.Get("/openapi.json", openapi.Handler("docs/swagger.json"))

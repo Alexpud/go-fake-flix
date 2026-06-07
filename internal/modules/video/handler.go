@@ -1,37 +1,34 @@
 package video
 
 import (
-	"go-fake-flix/internal/apierrors"
-	"go-fake-flix/internal/modules/video/usecases"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"go-fake-flix/internal/common"
+	"go-fake-flix/internal/modules/video/repository"
+	"go-fake-flix/internal/modules/video/usecases"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
 const (
-	MaxFileSize = 5 * 1024 * 1024 // 5MB
+	MaxFileSize = 5 * 1024 * 1024
 )
 
-// allowedUploadExtensions are suffixes including the dot, lowercased (see parseMultipartUpload).
 var allowedUploadExtensions = []string{".mp4", ".webm", ".mkv"}
 
 type ResponseSuccess struct {
 	Message string `json:"message,omitempty"`
 }
 
-var db = map[string]string{
-	"hello": "Hello, World!",
-}
-
-func RegisterVideoRoutes(r *chi.Mux) {
+func RegisterVideoRoutes(r *chi.Mux, repo repository.VideoRepository) {
 	r.Route("/api/v1/content", func(r chi.Router) {
-		r.Post("/upload", uploadVideo)
-		r.Get("/stream/{id}", getVideo)
+		r.Post("/upload", uploadVideo(repo))
+		r.Get("/stream/{id}", getVideo(repo))
 		r.Get("/doc", getDoc)
 	})
 }
@@ -55,7 +52,6 @@ func getDoc(w http.ResponseWriter, r *http.Request) {
 	}})
 }
 
-// @
 // @Summary      Upload a video file
 // @Description  Upload a video file
 // @Tags         Video
@@ -65,61 +61,67 @@ func getDoc(w http.ResponseWriter, r *http.Request) {
 // @Param        filename formData string true  "File name"
 // @Success      200
 // @Router       /api/v1/content/upload [post]
-func uploadVideo(w http.ResponseWriter, r *http.Request) {
-	file, fileName, err := parseMultipartUpload(r)
-	if err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err)
-		return
-	}
-	defer file.Close()
+func uploadVideo(repo repository.VideoRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		file, fileName, appErr := parseMultipartUpload(r)
+		if appErr != nil {
+			renderAppError(w, r, appErr)
+			return
+		}
+		defer file.Close()
 
-	filePath, errUsecase := usecases.UploadVideo(file, fileName)
-	if errUsecase != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, errUsecase)
-		return
-	}
+		if appErr := usecases.UploadVideo(r.Context(), repo, fileName, fileName); appErr != nil {
+			renderAppError(w, r, appErr)
+			return
+		}
 
-	db[fileName] = filePath
-	render.Status(r, http.StatusOK)
+		render.Status(r, http.StatusOK)
+	}
 }
 
-func parseMultipartUpload(r *http.Request) (multipart.File, string, error) {
+func parseMultipartUpload(r *http.Request) (multipart.File, string, *common.AppError) {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		return nil, "", &apierrors.AppError{Code: "FILE_NOT_FOUND", Message: "File not found"}
+		return nil, "", common.NewAppError("FILE_NOT_FOUND", "File not found", http.StatusBadRequest)
 	}
 
 	if fileHeader.Size > MaxFileSize {
-		return nil, "", &apierrors.AppError{Code: "FILE_TOO_LARGE", Message: "Max file size is 5MB"}
+		return nil, "", common.NewAppError("FILE_TOO_LARGE", "Max file size is 5MB", http.StatusBadRequest)
 	}
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if ext == "" || !slices.Contains(allowedUploadExtensions, ext) {
-		return nil, "", &apierrors.AppError{
-			Code:    "FILE_EXTENSION_INVALID",
-			Message: "Invalid file extension. Allowed: " + strings.Join(allowedUploadExtensions, ", "),
-		}
+		return nil, "", common.NewAppError(
+			"FILE_EXTENSION_INVALID",
+			"Invalid file extension. Allowed: "+strings.Join(allowedUploadExtensions, ", "),
+			http.StatusBadRequest,
+		)
 	}
 
 	return file, fileHeader.Filename, nil
 }
 
-// Exemple Doc
 // @Summary      Get stream content
 // @Description  Get stream content
 // @Tags         Video
 // @Produce      json
 // @Success      200				 {object}  ResponseSuccess
 // @Router       /api/v1/content/stream/{id} [get]
-func getVideo(w http.ResponseWriter, r *http.Request) {
-	// There should be logic to handle different ranges in the video: getting the video from a starting point and stuff
-	video, ok := db[r.URL.Query().Get("id")]
-	if !ok {
-		render.Status(r, http.StatusNotFound)
-		render.JSON(w, r, &apierrors.AppError{Code: "VIDEO_NOT_FOUND", Message: "Video not found"})
-		return
+func getVideo(repo repository.VideoRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+
+		v, appErr := usecases.GetVideo(r.Context(), repo, id)
+		if appErr != nil {
+			renderAppError(w, r, appErr)
+			return
+		}
+
+		http.ServeFile(w, r, v.FilePath)
 	}
-	http.ServeFile(w, r, video)
+}
+
+func renderAppError(w http.ResponseWriter, r *http.Request, appErr *common.AppError) {
+	render.Status(r, appErr.Status)
+	render.JSON(w, r, appErr)
 }
