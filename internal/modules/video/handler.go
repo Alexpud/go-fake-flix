@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"go-fake-flix/internal/common"
+	"go-fake-flix/internal/apierrors"
 	"go-fake-flix/internal/modules/video/repository"
 	"go-fake-flix/internal/modules/video/usecases"
 
@@ -65,13 +65,13 @@ func uploadVideo(repo repository.VideoRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		file, fileName, appErr := parseMultipartUpload(r)
 		if appErr != nil {
-			renderAppError(w, r, appErr)
+			renderAppError(w, r, appErr.Status, appErr)
 			return
 		}
 		defer file.Close()
 
 		if appErr := usecases.UploadVideo(r.Context(), repo, fileName, fileName); appErr != nil {
-			renderAppError(w, r, appErr)
+			renderAppError(w, r, 400, appErr)
 			return
 		}
 
@@ -79,19 +79,19 @@ func uploadVideo(repo repository.VideoRepository) http.HandlerFunc {
 	}
 }
 
-func parseMultipartUpload(r *http.Request) (multipart.File, string, *common.AppError) {
+func parseMultipartUpload(r *http.Request) (multipart.File, string, *apierrors.ProblemDetails) {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		return nil, "", common.NewAppError("FILE_NOT_FOUND", "File not found", http.StatusBadRequest)
+		return nil, "", apierrors.CreateProblemDetails("FILE_NOT_FOUND", "File not found", http.StatusBadRequest)
 	}
 
 	if fileHeader.Size > MaxFileSize {
-		return nil, "", common.NewAppError("FILE_TOO_LARGE", "Max file size is 5MB", http.StatusBadRequest)
+		return nil, "", apierrors.CreateProblemDetails("FILE_TOO_LARGE", "Max file size is 5MB", http.StatusBadRequest)
 	}
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if ext == "" || !slices.Contains(allowedUploadExtensions, ext) {
-		return nil, "", common.NewAppError(
+		return nil, "", apierrors.CreateProblemDetails(
 			"FILE_EXTENSION_INVALID",
 			"Invalid file extension. Allowed: "+strings.Join(allowedUploadExtensions, ", "),
 			http.StatusBadRequest,
@@ -111,9 +111,9 @@ func getVideo(repo repository.VideoRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		v, appErr := usecases.GetVideo(r.Context(), repo, id)
-		if appErr != nil {
-			renderAppError(w, r, appErr)
+		v, err := usecases.GetVideo(r.Context(), repo, id)
+		if err != nil {
+			renderAppError(w, r, 400, err)
 			return
 		}
 
@@ -121,7 +121,7 @@ func getVideo(repo repository.VideoRepository) http.HandlerFunc {
 	}
 }
 
-func renderAppError(w http.ResponseWriter, r *http.Request, appErr *common.AppError) {
-	render.Status(r, appErr.Status)
+func renderAppError(w http.ResponseWriter, r *http.Request, status int, appErr any) {
+	render.Status(r, status)
 	render.JSON(w, r, appErr)
 }

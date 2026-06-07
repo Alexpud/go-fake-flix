@@ -1,15 +1,14 @@
 package common
 
-type AppError struct {
+type BusinessError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	Status  int    `json:"-"`
 }
 
-func (e *AppError) Error() string {
+func (e *BusinessError) Error() string {
 	return e.Message
 }
 
-func NewAppError(code, message string, status int) *AppError {
-	return &AppError{Code: code, Message: message, Status: status}
+func NewBusinessError(code, message string) *BusinessError {
+	return &BusinessError{Code: code, Message: message}
 }
