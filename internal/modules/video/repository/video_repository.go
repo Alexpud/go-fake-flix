@@ -3,30 +3,37 @@ package repository
 import (
 	"context"
 	"errors"
-	"go-fake-flix/internal/modules/video/entities"
 	"sync"
+	"sync/atomic"
+
+	"go-fake-flix/internal/modules/video/entities"
 )
 
 type VideoRepository interface {
-	Get(ctx context.Context, id string) (entities.Video, error)
+	Get(ctx context.Context, id int64) (entities.Video, error)
 	Add(ctx context.Context, v entities.Video) error
+	NextID() int64
 }
 
 var (
-	ErrNotFound      = errors.New("video not found")
-	ErrAlreadyExists = errors.New("video already exists")
+	ErrNotFound = errors.New("video not found")
 )
 
 type Repository struct {
-	mu    sync.RWMutex
-	store map[string]entities.Video
+	mu     sync.RWMutex
+	store  map[int64]entities.Video
+	nextID atomic.Int64
 }
 
 func New() *Repository {
-	return &Repository{store: make(map[string]entities.Video)}
+	return &Repository{store: make(map[int64]entities.Video)}
 }
 
-func (r *Repository) Get(ctx context.Context, id string) (entities.Video, error) {
+func (r *Repository) NextID() int64 {
+	return r.nextID.Add(1)
+}
+
+func (r *Repository) Get(ctx context.Context, id int64) (entities.Video, error) {
 	if err := ctx.Err(); err != nil {
 		return entities.Video{}, err
 	}
@@ -49,9 +56,6 @@ func (r *Repository) Add(ctx context.Context, v entities.Video) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.store[v.FileName]; ok {
-		return ErrAlreadyExists
-	}
-	r.store[v.FileName] = v
+	r.store[v.ID] = v
 	return nil
 }

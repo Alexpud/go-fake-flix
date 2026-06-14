@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+	"go-fake-flix/internal/infrastructure/filestore"
 	"go-fake-flix/internal/modules/video"
 	videoRepository "go-fake-flix/internal/modules/video/repository"
+	videoService "go-fake-flix/internal/modules/video/service"
 	"go-fake-flix/internal/openapi"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/MarceloPetrucio/go-scalar-api-reference"
 	"github.com/go-chi/chi/v5"
@@ -27,7 +30,10 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	videoRepo := videoRepository.New()
-	video.RegisterVideoRoutes(r, videoRepo)
+	fileStore := filestore.NewLocalStore(filepath.Join("files", "video"))
+	videoSvc := videoService.New(videoRepo, fileStore)
+	mediaService := videoService.NewMediaService(videoSvc, fileStore)
+	video.RegisterVideoRoutes(r, videoSvc, mediaService)
 
 	r.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))))
 	r.Get("/openapi.json", openapi.Handler("docs/swagger.json"))
